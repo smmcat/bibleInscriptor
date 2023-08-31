@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1, maximum-scale=1">
+    <title>圣经提词器</title>
+    <script src="./dil/jquery.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            box-sizing: border-box;
+            padding: 10% 10%;
+            background: url(./static/background.jpg);
+            background-size: 100% 100%;
+            user-select: none;
+        }
+
+        .title {
+            text-align: center;
+            font-size: 60px;
+            font-weight: 800;
+            color: rgb(243, 212, 36);
+            transition: all .3s;
+            text-shadow: 1px 2px 3px #222222;
+        }
+
+        .content {
+            text-align: center;
+            font-size: 50px;
+            font-weight: 400;
+            color: #fff;
+            transition: all .3s;
+            text-shadow: 1px 2px 3px #222222;
+        }
+
+        .line {
+            text-align: center;
+        }
+
+        .line img {
+            user-select: none;
+            width: 100%;
+            height: 100%;
+        }
+
+
+
+        /* 侧边栏 */
+
+        :root {
+            --drawer-shade-height: 100vh;
+            --drawer-width: 40%;
+        }
+
+        .drawer-shade {
+            position: fixed;
+            z-index: 9999;
+            top: 0;
+            left: 0;
+            width: 100%;
+            visibility: hidden;
+            transition: all .2s;
+            height: var(--drawer-shade-height);
+            opacity: 0;
+        }
+
+        .drawer-shade.open {
+            opacity: 1;
+            visibility: visible;
+            background-color: rgba(0, 0, 10, .3);
+        }
+
+        .drawer-shade .drawer {
+            transform: translateX(-100%);
+            transition: all .3s;
+            width: var(--drawer-width);
+            background-color: #fff;
+            height: 100%;
+            box-shadow: 0px 0px 12px rgba(0, 0, 10, .6);
+        }
+
+        .drawer-shade .drawer.see {
+            transition: all .3s;
+            transform: translateX(0);
+        }
+
+        .drawerContent {
+            width: 100%;
+            height: 100%;
+            box-sizing: border-box;
+            padding: 5% 2%;
+            overflow: auto;
+        }
+
+        .drawerContent p {
+            font-size: 16px;
+            font-weight: 800;
+            padding: 6px;
+        }
+
+        .lectionBox,
+        .sectionBox,
+        .nodeBox {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+            gap: 8px;
+            overflow: auto;
+            max-height: 30%;
+        }
+
+        .sectionBox,
+        .nodeBox {
+            grid-template-columns: repeat(10, 1fr);
+        }
+
+        .lectionBox .item,
+        .sectionBox .item,
+        .nodeBox .item {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 14px;
+            color: #fff;
+            border: 3px solid #663927;
+            background-color: #66cc;
+            height: 40px;
+            user-select: none;
+        }
+
+        .lectionBox .item:hover,
+        .sectionBox .item:hover,
+        .nodeBox .item:hover {
+            background-color: olivedrab;
+        }
+
+        .item.on {
+            background-color: rgb(160, 158, 8) !important;
+        }
+
+        .lectionBox .item:nth-child(n + 40) {
+            background-color: rgb(218, 52, 22);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="drawer-shade">
+        <div class="drawer">
+            <div class="drawerContent">
+                <p>选择经文</p>
+                <div class="lectionBox">
+                </div>
+                <p>选择片章</p>
+                <div class="sectionBox"></div>
+                <p>选择小结</p>
+                <div class="nodeBox"></div>
+            </div>
+        </div>
+    </div>
+    <div class="title">左侧滑动侧边栏</div>
+    <div class="line"><img src="./static/line.png" alt=""></div>
+    <div class="content">通过按键↑↓切换</div>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', function () {
+
+            const drawer = (() => {
+                const drawer = document.querySelector('.drawer');
+                const shade = document.querySelector('.drawer-shade');
+
+                let touchXstart = 0;
+
+                document.body.addEventListener('mousedown', function (e) {
+                    if (e.pageX < 50) {
+                        touchXstart = e.pageX;
+                    }
+                });
+                document.body.addEventListener('mouseup', function (e) {
+                    if (!touchXstart) return;
+
+                    if (e.pageX - touchXstart > 100) {
+                        shade.classList.add('open');
+                        drawer.classList.add('see');
+                    }
+
+                    touchXstart = 0;
+
+                });
+                shade.addEventListener('mousedown', function (e) {
+                    touchXstart = e.pageX;
+                })
+                shade.addEventListener('mouseup', function (e) {
+                    if (touchXstart - e.pageX > 100) {
+                        shade.classList.remove('open');
+                        drawer.classList.remove('see');
+                    }
+                    touchXstart = 0;
+                });
+
+                document.body.addEventListener('touchstart', function (e) {
+
+                    if (e.changedTouches[0].pageX < 50) {
+                        touchXstart = e.changedTouches[0].pageX;
+                    }
+                });
+                document.body.addEventListener('touchend', function (e) {
+                    if (!touchXstart) return;
+
+                    if (e.changedTouches[0].pageX - touchXstart > 100) {
+                        shade.classList.add('open');
+                        drawer.classList.add('see');
+                    }
+
+                    touchXstart = 0;
+
+                });
+                shade.addEventListener('touchstart', function (e) {
+                    touchXstart = e.changedTouches[0].pageX;
+                })
+                shade.addEventListener('touchend', function (e) {
+                    if (touchXstart - e.changedTouches[0].pageX > 100) {
+                        shade.classList.remove('open');
+                        drawer.classList.remove('see');
+                    }
+                    touchXstart = 0;
+                });
+
+                function open() {
+                    shade.classList.add('open');
+                    drawer.classList.add('see');
+                }
+                function close() {
+                    shade.classList.remove('open');
+                    drawer.classList.remove('see');
+                }
+                return {
+                    open, close
+                }
+            })();
+
+
+            // 圣经全卷及简写并章节
+            const bibleLection = [
+                { shortName: 'gn', lection: '创世纪', chapter: 50 },
+                { shortName: 'ex', lection: '出埃及记', chapter: 40 },
+                { shortName: 'lv', lection: '利未记', chapter: 27 },
+                { shortName: 'nm', lection: '民数记', chapter: 36 },
+                { shortName: 'dt', lection: '申命记', chapter: 34 },
+                { shortName: 'js', lection: '约书亚记', chapter: 24 },
+                { shortName: 'jud', lection: '士师记', chapter: 21 },
+                { shortName: 'rt', lection: '路得记', chapter: 4 },
+                { shortName: '1sm', lection: '撒母耳记上', chapter: 31 },
+                { shortName: '2sm', lection: '撒母耳记下', chapter: 24 },
+                { shortName: '1kgs', lection: '列王纪上', chapter: 22 },
+                { shortName: '2kgs', lection: '列王纪下', chapter: 25 },
+                { shortName: '1ch', lection: '历代志上', chapter: 29 },
+                { shortName: '2ch', lection: '历代志下', chapter: 36 },
+                { shortName: 'ezr', lection: '以斯拉记', chapter: 10 },
+                { shortName: 'ne', lection: '尼西米记', chapter: 13 },
+                { shortName: 'et', lection: '以斯帖记', chapter: 10 },
+                { shortName: 'job', lection: '约伯记', chapter: 42 },
+                { shortName: 'ps', lection: '诗篇', chapter: 150 },
+                { shortName: 'prv', lection: '箴言', chapter: 31 },
+                { shortName: 'ec', lection: '传道书', chapter: 12 },
+                { shortName: 'so', lection: '雅歌', chapter: 8 },
+                { shortName: 'is', lection: '以赛亚书', chapter: 66 },
+                { shortName: 'jr', lection: '耶利米书', chapter: 52 },
+                { shortName: 'lm', lection: '耶利米哀歌', chapter: 5 },
+                { shortName: 'ez', lection: '以西结书', chapter: 48 },
+                { shortName: 'dn', lection: '但以理书', chapter: 12 },
+                { shortName: 'ho', lection: '何西阿书', chapter: 14 },
+                { shortName: 'jl', lection: '约珥书', chapter: 3 },
+                { shortName: 'am', lection: '阿摩司书', chapter: 9 },
+                { shortName: 'ob', lection: '俄巴底亚书', chapter: 1 },
+                { shortName: 'jn', lection: '约拿书', chapter: 4 },
+                { shortName: 'mi', lection: '弥迦书', chapter: 7 },
+                { shortName: 'na', lection: '那鸿书', chapter: 3 },
+                { shortName: 'hk', lection: '哈巴谷书', chapter: 3 },
+                { shortName: 'zp', lection: '西番雅书', chapter: 3 },
+                { shortName: 'hg', lection: '哈该书', chapter: 2 },
+                { shortName: 'zc', lection: '撒迦利亚书', chapter: 14 },
+                { shortName: 'ml', lection: '玛拉基书', chapter: 4 },
+                { shortName: 'mt', lection: '马太福音', chapter: 28 },
+                { shortName: 'mk', lection: '马可福音', chapter: 16 },
+                { shortName: 'lk', lection: '路加福音', chapter: 24 },
+                { shortName: 'jo', lection: '约翰福音', chapter: 21 },
+                { shortName: 'act', lection: '使徒行传', chapter: 28 },
+                { shortName: 'rm', lection: '罗马书', chapter: 16 },
+                { shortName: '1co', lection: '哥林多前书', chapter: 16 },
+                { shortName: '2co', lection: '哥林多后书', chapter: 13 },
+                { shortName: 'gl', lection: '加拉太书', chapter: 6 },
+                { shortName: 'eph', lection: '以弗所书', chapter: 6 },
+                { shortName: 'ph', lection: '腓利比书', chapter: 4 },
+                { shortName: 'cl', lection: '歌罗西书', chapter: 4 },
+                { shortName: '1ts', lection: '帖撒罗尼迦前书', chapter: 5 },
+                { shortName: '2ts', lection: '帖撒罗尼迦后书', chapter: 3 },
+                { shortName: '1tm', lection: '提摩太前书', chapter: 6 },
+                { shortName: '2tm', lection: '提摩太后书', chapter: 4 },
+                { shortName: 'tt', lection: '提多书', chapter: 3 },
+                { shortName: 'phm', lection: '腓利门书', chapter: 1 },
+                { shortName: 'hb', lection: '希伯来书', chapter: 13 },
+                { shortName: 'jm', lection: '雅各书', chapter: 5 },
+                { shortName: '1pe', lection: '彼得前书', chapter: 5 },
+                { shortName: '2pe', lection: '彼得后书', chapter: 3 },
+                { shortName: '1jo', lection: '约翰一书', chapter: 5 },
+                { shortName: '2jo', lection: '约翰二书', chapter: 1 },
+                { shortName: '3jo', lection: '约翰三书', chapter: 1 },
+                { shortName: 'jd', lection: '犹大书', chapter: 1 },
+                { shortName: 're', lection: '启示录', chapter: 22 }
+            ]
+
+            // 初始化请求数据
+            let queryData = {
+                lection: '',
+                shortName: '',
+                chapter: '',
+                node: ''
+            }
+
+            // 初始化章节经文数据
+            let chapterDataList = []
+
+            // 初始化侧边栏列表数据
+            createBiblelectionData();
+            function createBiblelectionData() {
+
+                // 绑定关键节点
+                const lectionBox = document.querySelector('.lectionBox');
+                const sectionBox = document.querySelector('.sectionBox');
+                const nodeBox = document.querySelector('.nodeBox');
+
+                // 从 bibleLection 对象生成 经文书卷按钮
+                let strHtml = '';
+                bibleLection.forEach(item => {
+                    strHtml += `<div class="item" shortName="${item.shortName}" chapterNum="${item.chapter}">${item.lection}</div>`
+                })
+                lectionBox.innerHTML = strHtml;
+
+                // 为 经文书卷按钮 绑定单击事件
+                lectionBox.addEventListener('click', function (e) {
+
+                    if (e.target.className !== 'item') return
+
+                    // 添加选中效果
+                    removeOnClass(this)
+                    e.target.classList.add('on');
+
+                    // 赋值请求参数
+                    putQueryshortNameData(e.target.getAttribute('shortName'), e.target.innerHTML);
+
+                    // 生成对应章节
+                    createBibleSection(e.target.getAttribute('chapterNum'))
+                    console.log(e.target.getAttribute('chapterNum'));
+                })
+
+                // 清除其他样式
+                function removeOnClass(node) {
+                    for (let i = 0; i < node.children.length; i++) {
+                        node.children[i].classList.remove('on')
+                    }
+                }
+
+                // 向请求数据选择 经文书卷
+                function putQueryshortNameData(str, bookname) {
+                    queryData.shortName = str;
+                    queryData.lection = bookname;
+                }
+                // 向请求数据选择 经文章节
+                function putQuerychapterData(num) {
+                    queryData.chapter = num - 0;
+                }
+
+                // 向请求数据选择 经文段落
+                function putQueryNodeData(num) {
+                    queryData.node = num - 0;
+                }
+
+                // 清除小节内容
+                function clearBibleNodeData() {
+                    nodeBox.innerHTML = '';
+                }
+
+                // 创建 经文章节列表
+                function createBibleSection(num) {
+
+                    // 清除小节内容
+                    clearBibleNodeData()
+
+                    let section_strHTML = ''
+                    for (let i = 0; i < num; i++) {
+                        section_strHTML += `<div class="item" num="${i + 1}">${i + 1}</div>`
+                    }
+                    sectionBox.innerHTML = section_strHTML;
+
+                    sectionBox.addEventListener('click', async function (e) {
+
+                        if (e.target.className !== 'item') return
+
+                        // 添加选中效果
+                        removeOnClass(this)
+                        e.target.classList.add('on');
+
+                        // 赋值请求参数
+                        putQuerychapterData(e.target.getAttribute('num'));
+
+                        // 发起请求
+                        const nodeNum = await getBiblechapterDataList();
+                        createBibleNodeList(nodeNum);
+                    })
+                }
+
+                // 创建 经文小节列表
+                function createBibleNodeList(num) {
+                    let node_strHTML = ''
+                    for (let i = 0; i < num; i++) {
+                        node_strHTML += `<div class="item" num="${i + 1}">${i + 1}</div>`
+                    }
+                    nodeBox.innerHTML = node_strHTML;
+
+                    // 小节监听单击事件
+                    nodeBox.addEventListener('click', function (e) {
+
+                        if (e.target.className !== 'item') return
+
+                        // 添加选中效果
+                        removeOnClass(this)
+                        e.target.classList.add('on');
+
+                        putQueryNodeData(e.target.getAttribute('num'));
+
+                        // 渲染页面
+                        screenShowLectionByQueryList();
+                        // 关闭侧边栏
+                        drawer.close();
+                    })
+
+                }
+
+                // 按钮切换内容
+                document.addEventListener('keyup', async function (e) {
+
+                    if (e.key == 'T' || e.key == 't') {
+                            drawer.open();
+                    }
+
+                    if (e.key == 'ArrowDown') {
+
+                        checkNodeNextDown();
+                    }
+                    if (e.key == 'ArrowUp') {
+
+                        checkNodeUpTop();
+                    }
+                });
+            }
+
+            async function checkNodeUpTop() {
+
+                // 若段落已经触顶
+                if (queryData.node == 1) {
+                    // 获取当前所在圣经列表中的下标
+                    let index = bibleLection.findIndex(item => item.shortName == queryData.shortName);
+                    console.log(index);
+
+                    // 判断当前显示的经文是否为该卷的第一章
+                    if (queryData.chapter == 1) {
+
+                        // 获取上一个 书卷对象下标
+                        index = index == 0 ? index : index - 1;
+                        // 创建请求参数对象
+                        queryData = {
+                            lection: bibleLection[index].lection,
+                            shortName: bibleLection[index].shortName,
+                            chapter: bibleLection[index].chapter
+                        }
+                    } else {
+
+                        // 获取上一章节
+                        chapter = queryData.chapter - 1;
+                        // 创建请求参数对象
+                        queryData = {
+                            lection: bibleLection[index].lection,
+                            shortName: bibleLection[index].shortName,
+                            chapter
+                        }
+                    }
+
+                    const num = await getBiblechapterDataList();
+
+                    queryData.node = num;
+                    screenShowLectionByQueryList();
+
+                } else {
+
+                    queryData.node = queryData.node - 1;
+                    screenShowLectionByQueryList();
+                }
+            }
+
+            async function checkNodeNextDown() {
+
+                // 如果该章节的小节已经触底
+                if (queryData.node == chapterDataList.length) {
+                    console.log('触发触底');
+
+                    // 获取当前所在圣经列表中的下标
+                    let index = bibleLection.findIndex(item => item.shortName == queryData.shortName);
+
+                    // 判断该章节已经是该书卷的最后一章
+                    if (bibleLection[index].chapter == queryData.chapter) {
+                        console.log('已是该卷最后一章');
+                        index = index + 1;
+
+                        // 创建请求参数对象
+                        queryData = {
+                            lection: bibleLection[index].lection,
+                            shortName: bibleLection[index].shortName,
+                            chapter: 1
+                        }
+                    } else {
+                        // 获取下一章节
+                        chapter = queryData.chapter + 1;
+                        // 创建请求参数对象
+                        queryData = {
+                            lection: bibleLection[index].lection,
+                            shortName: bibleLection[index].shortName,
+                            chapter,
+                        }
+                    }
+
+                    await getBiblechapterDataList();
+
+                    queryData.node = 1;
+                    screenShowLectionByQueryList();
+                } else {
+                    queryData.node = queryData.node + 1;
+                    screenShowLectionByQueryList();
+                }
+            }
+
+            // 界面渲染经文内容
+            function screenShowLectionByQueryList() {
+                const title = document.querySelector('.title');
+                const content = document.querySelector('.content');
+
+                title.innerHTML = `${queryData.lection} ${queryData.chapter}章${queryData.node}节`
+                content.innerHTML = chapterDataList[queryData.node - 1]
+            }
+
+
+            // 发起请求 获取指定章节数据
+            async function getBiblechapterDataList() {
+                const { data } = await $.ajax({
+                    url: 'http://1.15.99.237:85/bible',
+                    data: {
+                        shortName: queryData.shortName,
+                        chapter: queryData.chapter
+                    },
+                    type: 'GET',
+                });
+
+                chapterDataList = data;
+                return data.length;
+            }
+        })
+    </script>
+</body>
+
+</html>
